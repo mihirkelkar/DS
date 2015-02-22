@@ -1,0 +1,60 @@
+package main
+
+import (
+    "fmt"
+    "net/rpc"
+    "net"
+    "log"
+    "encoding/json"
+)
+
+//The arguements which will unmarshall the JSON Object for lookup
+
+type Listings struct{}
+
+
+func Lookup(key string, rel string) {
+}
+
+func(t *Listings) Start( data string, reply *interface{}) error{
+  data_byte := []byte(data)
+  //fmt.Println(string(data_byte))
+
+  //Creating a holder than can only contain the request recieved
+  var function_holder interface{}
+  error := json.Unmarshal(data_byte, &function_holder)
+  if error != nil{
+    fmt.Println("Some problem with request recieved from the client")
+  }
+  //Converting function holder interface to a map
+  function_res, _ := function_holder.(map[string]interface{})
+  fmt.Println(function_res["id"].(string))
+  switch function_res["method"]{
+    case "lookup":
+      *reply = "test"
+
+    default:
+      *reply = "This is not a valid function"
+  }
+  //*reply = "Have reached"
+  return nil
+}
+
+func main(){
+  //Instantiate a new "object"
+  listings := new(Listings)
+  rpc.Register(listings)
+  listener, error := net.Listen("tcp", ":1234")
+  if error != nil{
+    log.Fatal("Error occured while listening" + error.Error())
+  }
+  for{
+    connection, err := listener.Accept()
+    if err != nil{
+      log.Fatal("Error while listening request")
+    } else {
+      log.Println("Connection to the client service established")
+    }
+    go rpc.ServeConn(connection)
+  }
+}
