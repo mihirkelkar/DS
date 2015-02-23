@@ -5,8 +5,9 @@ import (
     "net/rpc"
     "net"
     "log"
-    "reflect"
     "encoding/json"
+    "strings"
+    "os"
 //    "sync/atomic"
 //    "runtime"
 )
@@ -23,7 +24,7 @@ type Listings struct{}
 func Lookup(key string, rel string) (interface{}){
   //This function is currently working
   fmt.Println("Lookup function executed")
-  return global_map[key + rel]
+  return global_map[key + "-" + rel]
 }
 
 func(t *Listings) Start( data string, reply *[]byte) error{
@@ -44,7 +45,7 @@ func(t *Listings) Start( data string, reply *[]byte) error{
     case "lookup":
       //Things done here are for the sole purpose of converting 
       //params to lookup params type. 
-      fmt.Println(reflect.TypeOf(function_res["params"]))
+      //fmt.Println(reflect.TypeOf(function_res["params"]))
       params, _ := function_res["params"].([]interface{})
       key, relation := params[0].(string), params[1].(string)
       result := Lookup(key, relation)
@@ -59,7 +60,7 @@ func(t *Listings) Start( data string, reply *[]byte) error{
       params, _ := function_res["params"].([]interface{})
       key, relation := params[0].(string), params[1].(string)
       value := params[2] //This is a map of string to interface
-      global_map[key + relation] = value
+      global_map[key + "-" + relation] = value
       var result_map map[string]interface{}
       result_map = make(map[string]interface{})
       result_map["result"] = "True"
@@ -71,19 +72,19 @@ func(t *Listings) Start( data string, reply *[]byte) error{
       params, _ := function_res["params"].([]interface{})
       key, relation := params[0].(string), params[1].(string)
       value := params[2] //This is a map of string to interface
-      global_map[key + relation] = value
+      global_map[key + "-" + relation] = value
       *reply = nil
     
     case "delete":
       params, _ := function_res["params"].([]interface{})
       key, relation := params[0].(string), params[1].(string)
-      delete(global_map, key + relation)
+      delete(global_map, key + "-" + relation)
       *reply = []byte("This has been deleted.")
 
     case "listKeys":
       keys := make([]string, 0, len(global_map))
       for counter := range global_map{
-        keys = append(keys, counter)
+        keys = append(keys, strings.Split(counter, "-")[0])
       } 
       result := interface{}(keys)
       var result_map map[string]interface{}
@@ -92,6 +93,22 @@ func(t *Listings) Start( data string, reply *[]byte) error{
       result_map["id"] = function_res["id"]
       result_map["error"] = nil
       *reply, _ = json.Marshal(result_map)
+    
+    case "listIDs":
+      ids := make([][]string, 0, len(global_map))
+      for counter := range global_map{
+        ids = append(ids, strings.Split(counter,"-"))
+      }
+      result := interface{}(ids)
+      var result_map map[string]interface{}
+      result_map = make(map[string]interface{})
+      result_map["result"] = result
+      result_map["id"] = function_res["id"]
+      result_map["error"] = nil
+      *reply, _ = json.Marshal(result_map)
+  
+    case "shutdown":
+      os.Exit(0)
 
     default:
       *reply = []byte("This is not a valid function")
@@ -102,7 +119,7 @@ func(t *Listings) Start( data string, reply *[]byte) error{
 
 func main(){
   global_map = make(map[string]interface{})
-  global_map["mihirkelkar"] = "this is being returned from the map"
+  global_map["mihir-kelkar"] = "this is being returned from the map"
 
   //Instantiate a map
   listings := new(Listings)
