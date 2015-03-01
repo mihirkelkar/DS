@@ -1,0 +1,8 @@
+{
+  "serverID" : "mynameisPooh",
+  "protocol" : "tcp",
+  "ipAddress" : "127.0.0.1",
+  "port" : 1234,
+  "persistentStorageContainer" : {"file" : "dict3.txt"},
+  "methods": ["lookup", "insert", "delete", "listKeys", "listIDs","shutdown"]
+}
